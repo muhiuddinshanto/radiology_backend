@@ -9,6 +9,7 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = '__all__'
+        read_only_fields = ['owner']
 
 class AnnotationPolygonSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,7 +22,8 @@ class UploadedImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UploadedImage
-        fields = ['id', 'image', 'uploaded_at', 'polygons']
+        fields = ['id', 'image', 'uploaded_at', 'polygons', 'owner']
+        read_only_fields = ['owner']
 
 # --- Auth Serializers ---
 

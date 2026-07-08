@@ -14,23 +14,35 @@ from .serializers import (
 # --- ViewSets ---
 
 class TaskViewSet(viewsets.ModelViewSet):
-    queryset = Task.objects.all().order_by('-created_at')
     serializer_class = TaskSerializer
 
     def get_queryset(self):
-        queryset = Task.objects.all().order_by('-created_at')
+        # প্রতিটি ইউজার শুধু নিজের টাস্ক দেখবে
+        queryset = Task.objects.filter(owner=self.request.user).order_by('-created_at')
         date_param = self.request.query_params.get('date', None)
         if date_param is not None:
             queryset = queryset.filter(due_date=date_param)
         return queryset
 
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
 class UploadedImageViewSet(viewsets.ModelViewSet):
-    queryset = UploadedImage.objects.all().order_by('uploaded_at')
     serializer_class = UploadedImageSerializer
 
+    def get_queryset(self):
+        # প্রতিটি ইউজার শুধু নিজের আপলোড করা ছবি দেখবে
+        return UploadedImage.objects.filter(owner=self.request.user).order_by('uploaded_at')
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
 class AnnotationPolygonViewSet(viewsets.ModelViewSet):
-    queryset = AnnotationPolygon.objects.all()
     serializer_class = AnnotationPolygonSerializer
+
+    def get_queryset(self):
+        # পলিগন সরাসরি owner রাখে না — যে ছবিতে আছে তার owner দিয়ে ফিল্টার
+        return AnnotationPolygon.objects.filter(image__owner=self.request.user)
 
 # --- Auth Views ---
 

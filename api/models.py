@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class Task(models.Model):
     PRIORITY_CHOICES = [
@@ -12,6 +13,13 @@ class Task(models.Model):
         ('done', 'Done'),
     ]
 
+    owner = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='tasks',
+        null=True, blank=True,
+        # null=True so the migration doesn't force a one-off default on
+        # existing rows. After migrating, backfill old rows (see README)
+        # then you can drop null=True if you want it strictly required.
+    )
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='todo')
@@ -25,6 +33,10 @@ class Task(models.Model):
         return self.title
 
 class UploadedImage(models.Model):
+    owner = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='images',
+        null=True, blank=True,
+    )
     image = models.ImageField(upload_to='annotations/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
