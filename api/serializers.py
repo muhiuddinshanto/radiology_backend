@@ -18,23 +18,15 @@ class AnnotationPolygonSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # 🔒 IDOR ফিক্স: request.user-এর নিজের UploadedImage ছাড়া অন্য কোনো
-        # image_id `image` ফিল্ডে valid choice হিসেবেই থাকবে না। এর ফলে
-        # create/update দুই ক্ষেত্রেই DRF নিজে থেকে standard validation
-        # error দেবে ("Invalid pk ... - object does not exist"), যদি কেউ
-        # অন্য ইউজারের image-এর সাথে polygon জোড়ার চেষ্টা করে।
         request = self.context.get('request')
         if request is not None and request.user and request.user.is_authenticated:
             self.fields['image'].queryset = UploadedImage.objects.filter(
                 owner=request.user
             )
         else:
-            # Unauthenticated/no-context state (e.g. schema generation) —
-            # fail-safe: কোনো image-ই valid না, empty queryset।
             self.fields['image'].queryset = UploadedImage.objects.none()
 
 class UploadedImageSerializer(serializers.ModelSerializer):
-    # নেস্টেড সিরিয়ালাইজার রিড-অনলি
     polygons = AnnotationPolygonSerializer(many=True, read_only=True)
 
     class Meta:
@@ -50,6 +42,15 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'email', 'password']
+
+    def validate_username(self, value):
+        # user যদি username field এ email দেয়, @ এর আগের অংশ নাও
+        if '@' in value:
+            value = value.split('@')[0]
+        # unique check
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("This username is already taken.")
+        return value
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
@@ -69,10 +70,8 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         email_or_username = attrs.get(self.username_field)
         try:
-            # যদি ইনপুটটি ইমেইল হয়, তবে ডাটাবেস থেকে ইউজারনেম খুঁজে বের করবে
             user = User.objects.get(email=email_or_username)
             attrs[self.username_field] = user.username
         except User.DoesNotExist:
-            # যদি ইমেইল দিয়ে না পাওয়া যায়, তবে সাধারণ ইউজারনেম হিসেবেই প্রসেস করবে
             pass
         return super().validate(attrs)
