@@ -7,7 +7,7 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-dev-only')
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = config('DEBUG', default='False').strip().lower() in {'1', 'true', 'yes', 'on'}
 
 
 ALLOWED_HOSTS = config(
@@ -89,7 +89,7 @@ DATABASES = {
     )
 }
 
-# sslmode শুধু Postgres/MySQL-এর ক্ষেত্রেই যোগ করুন, SQLite ব্যবহার হলে না
+# sslmode ÃƒÂ Ã‚Â¦Ã‚Â¶ÃƒÂ Ã‚Â§Ã‚ÂÃƒÂ Ã‚Â¦Ã‚Â§ÃƒÂ Ã‚Â§Ã‚Â Postgres/MySQL-ÃƒÂ Ã‚Â¦Ã‚ÂÃƒÂ Ã‚Â¦Ã‚Â° ÃƒÂ Ã‚Â¦Ã¢â‚¬Â¢ÃƒÂ Ã‚Â§Ã‚ÂÃƒÂ Ã‚Â¦Ã‚Â·ÃƒÂ Ã‚Â§Ã¢â‚¬Â¡ÃƒÂ Ã‚Â¦Ã‚Â¤ÃƒÂ Ã‚Â§Ã‚ÂÃƒÂ Ã‚Â¦Ã‚Â°ÃƒÂ Ã‚Â§Ã¢â‚¬Â¡ÃƒÂ Ã‚Â¦Ã¢â‚¬Â¡ ÃƒÂ Ã‚Â¦Ã‚Â¯ÃƒÂ Ã‚Â§Ã¢â‚¬Â¹ÃƒÂ Ã‚Â¦Ã¢â‚¬â€ ÃƒÂ Ã‚Â¦Ã¢â‚¬Â¢ÃƒÂ Ã‚Â¦Ã‚Â°ÃƒÂ Ã‚Â§Ã‚ÂÃƒÂ Ã‚Â¦Ã‚Â¨, SQLite ÃƒÂ Ã‚Â¦Ã‚Â¬ÃƒÂ Ã‚Â§Ã‚ÂÃƒÂ Ã‚Â¦Ã‚Â¯ÃƒÂ Ã‚Â¦Ã‚Â¬ÃƒÂ Ã‚Â¦Ã‚Â¹ÃƒÂ Ã‚Â¦Ã‚Â¾ÃƒÂ Ã‚Â¦Ã‚Â° ÃƒÂ Ã‚Â¦Ã‚Â¹ÃƒÂ Ã‚Â¦Ã‚Â²ÃƒÂ Ã‚Â§Ã¢â‚¬Â¡ ÃƒÂ Ã‚Â¦Ã‚Â¨ÃƒÂ Ã‚Â¦Ã‚Â¾
 if not DEBUG and DATABASES['default']['ENGINE'] != 'django.db.backends.sqlite3':
     DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = 'require'
 
@@ -107,7 +107,14 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Django 5 uses STORAGES instead of DEFAULT_FILE_STORAGE and
+# STATICFILES_STORAGE.
+STORAGES = {
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
@@ -128,7 +135,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # USE_CLOUDINARY=False -> development: files go to local MEDIA_ROOT, served
 #                         by Django itself when DEBUG=True (see urls.py)
 #
-# Toggle this purely with an environment variable — no code change needed
+# Toggle this purely with an environment variable ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no code change needed
 # when moving between local dev and Render/production.
 # ---------------------------------------------------------------------------
 USE_CLOUDINARY = config('USE_CLOUDINARY', default=False, cast=bool)
@@ -139,6 +146,8 @@ if USE_CLOUDINARY:
         'API_KEY': config('CLOUDINARY_API_KEY', default=''),
         'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
     }
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    STORAGES['default'] = {
+        'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
+    }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
