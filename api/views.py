@@ -21,7 +21,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         # প্রতিটি ইউজার শুধু নিজের টাস্ক দেখবে
         queryset = Task.objects.filter(owner=self.request.user).order_by('-created_at')
         date_param = self.request.query_params.get('date', None)
-        if date_param is not None:
+        if date_param:
             queryset = queryset.filter(due_date=date_param)
         return queryset
 
